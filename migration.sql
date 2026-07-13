@@ -1,18 +1,11 @@
-# Secure Supabase SQL Migration
-# Run this in: Supabase Dashboard → SQL Editor → New Query
-
-## Step 1: Add unique constraint on responses
-```sql
+﻿
 ALTER TABLE public.responses 
   DROP CONSTRAINT IF EXISTS responses_unique_rating;
 
 ALTER TABLE public.responses 
   ADD CONSTRAINT responses_unique_rating 
   UNIQUE (participant_id, prompt_number, actual_model, metric_name);
-```
 
-## Step 2: Enable RLS and Restrict Access
-```sql
 -- Enable RLS
 ALTER TABLE public.participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.responses ENABLE ROW LEVEL SECURITY;
@@ -37,10 +30,7 @@ CREATE POLICY "responses_insert" ON public.responses
 
 CREATE POLICY "responses_update" ON public.responses 
   FOR UPDATE USING (true) WITH CHECK (true);
-```
 
-## Step 3: Create Secure RPCs for Data Access
-```sql
 -- Step 1.5: Add completed flag to participants table
 ALTER TABLE public.participants
   ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT FALSE;
@@ -191,4 +181,3 @@ BEGIN
   RETURN QUERY SELECT * FROM public.responses;
 END;
 $$;
-```

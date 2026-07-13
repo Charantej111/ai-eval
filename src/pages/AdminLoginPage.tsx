@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KeyRound, AlertCircle, Loader2 } from 'lucide-react';
@@ -9,21 +9,32 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (sessionStorage.getItem('admin_session') === 'authenticated') {
+      navigate('/admin', { replace: true });
+    }
+  }, [navigate]);
+
   const handleLogin = () => {
     if (!password) return;
     setLoading(true);
     setError('');
 
-    setTimeout(() => {
-      const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD as string;
-      if (password === adminPassword) {
-        sessionStorage.setItem('admin_session', 'authenticated');
-        navigate('/admin');
-      } else {
-        setError('Invalid password. Please check and try again.');
-      }
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD as string;
+    
+    if (!adminPassword) {
+      setError('Configuration Error: Admin password not found in environment variables.');
       setLoading(false);
-    }, 500);
+      return;
+    }
+
+    if (password === adminPassword) {
+      sessionStorage.setItem('admin_session', 'authenticated');
+      navigate('/admin', { replace: true });
+    } else {
+      setError('Invalid password. Please check and try again.');
+      setLoading(false);
+    }
   };
 
   return (

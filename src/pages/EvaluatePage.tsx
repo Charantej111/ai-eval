@@ -107,6 +107,11 @@ export default function EvaluatePage() {
 
         if (isMounted) {
           if (firstIncompletePromptId === -1) {
+            try {
+              await supabase.rpc('mark_participant_completed', { pid });
+            } catch (err) {
+              console.error(err);
+            }
             navigate('/thankyou', { replace: true });
             return;
           }
@@ -143,20 +148,20 @@ export default function EvaluatePage() {
       setRatings((prev) => ({ ...prev, [key]: value }));
       setSaveStatus('saving');
       try {
-        const { error } = await supabase.from('responses').upsert(
-          [
-            {
-              participant_id: participantId,
-              prompt_number: promptNumber,
-              displayed_position: displayPos,
-              actual_model: model,
-              metric_name: metric,
-              rating: value,
-            },
-          ],
-          { onConflict: 'participant_id,prompt_number,actual_model,metric_name' }
-        );
+        const { data, error } = await supabase.rpc('upsert_participant_rating', {
+          p_participant_id: participantId,
+          p_prompt_number: promptNumber,
+          p_displayed_position: displayPos,
+          p_actual_model: model,
+          p_metric_name: metric,
+          p_rating: value
+        });
+        
         if (error) throw error;
+        
+        if (!data?.success) {
+          throw new Error(data?.message || 'Failed to save rating');
+        }
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 1500);
       } catch {
@@ -350,13 +355,18 @@ export default function EvaluatePage() {
             whileTap={{ scale: isComplete ? 0.98 : 1 }}
             type="button"
             disabled={!isComplete}
-            onClick={() =>
-              navigate(
-                promptNumber < prompts.length
-                  ? `/evaluate/${promptNumber + 1}`
-                  : '/thankyou'
-              )
-            }
+            onClick={async () => {
+              if (promptNumber < prompts.length) {
+                navigate(`/evaluate/${promptNumber + 1}`);
+              } else {
+                try {
+                  await supabase.rpc('mark_participant_completed', { pid: participantId });
+                } catch (err) {
+                  console.error('Error marking completed:', err);
+                }
+                navigate('/thankyou');
+              }
+            }}
             className="inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed text-zinc-50 font-bold text-xs px-5 py-3.5 rounded-xl transition shadow-md"
           >
             <span>

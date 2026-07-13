@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isEmailDuplicate, setIsEmailDuplicate] = useState(false);
+  const [welcomeBackMsg, setWelcomeBackMsg] = useState('');
 
   const canContinue =
     name.trim().length > 0 &&
@@ -43,16 +44,60 @@ export default function RegisterPage() {
       }
 
       // --- Check if email already exists via RPC ---
-      const { data: emailExists, error: checkError } = await supabase
+      const { data: emailCheckData, error: checkError } = await supabase
         .rpc('check_participant_email', { check_email: normalizedEmail });
 
       if (checkError) {
         throw new Error('Unable to verify your email. Please try again.');
       }
 
-      if (emailExists) {
-        setIsEmailDuplicate(true);
-        return;
+      const emailRecord = emailCheckData?.[0];
+
+      if (emailRecord) {
+        if (emailRecord.is_completed) {
+          setIsEmailDuplicate(true);
+          setLoading(false);
+          return;
+        } else {
+          // Restore session
+          const participantId = emailRecord.participant_id;
+          localStorage.setItem('participantId', participantId);
+          
+          const { data: savedResponses, error: responsesError } = await supabase
+            .rpc('get_participant_responses', { pid: participantId });
+            
+          if (responsesError) throw new Error('Unable to restore session data.');
+          
+          let nextPrompt = 1;
+          if (savedResponses && savedResponses.length > 0) {
+            const EXPECTED_PER_PROMPT = MODELS.length * METRICS.length;
+            const promptCounts: Record<number, number> = {};
+            
+            savedResponses.forEach((r: any) => {
+              promptCounts[r.prompt_number] = (promptCounts[r.prompt_number] || 0) + 1;
+            });
+            
+            for (let p = 1; p <= prompts.length; p++) {
+              if (promptCounts[p] >= EXPECTED_PER_PROMPT) {
+                nextPrompt = p + 1;
+              } else {
+                break;
+              }
+            }
+          }
+          
+          if (nextPrompt > prompts.length) {
+            await supabase.rpc('mark_participant_completed', { pid: participantId });
+            navigate('/thankyou');
+            return;
+          }
+          
+          setWelcomeBackMsg("Welcome back! We've restored your previous session. Continue from where you left off.");
+          setTimeout(() => {
+             navigate(`/evaluate/${nextPrompt}`);
+          }, 2000);
+          return;
+        }
       }
 
       // --- New user — create participant ---
@@ -223,7 +268,25 @@ export default function RegisterPage() {
         {/* Actions */}
         <div className="space-y-3 pt-2">
           <AnimatePresence mode="wait">
-            {isEmailDuplicate ? (
+            {welcomeBackMsg ? (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex flex-col gap-2 p-4 bg-blue-50/50 backdrop-blur-xs border border-blue-200/50 rounded-xl mb-4"
+              >
+                <div className="flex items-center gap-2 text-blue-700 font-medium">
+                  <CheckCircle className="w-5 h-5 shrink-0" />
+                  <span>Session Restored</span>
+                </div>
+                <p className="text-[13px] text-blue-600 leading-relaxed">
+                  {welcomeBackMsg}
+                </p>
+                <div className="flex justify-center mt-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                </div>
+              </motion.div>
+            ) : isEmailDuplicate ? (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -235,7 +298,7 @@ export default function RegisterPage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-[#15803D] font-medium text-sm leading-relaxed">
-                    It looks like you've already participated in this evaluation. Thank you for your valuable contribution!
+                    It looks like you've already completed this evaluation. Thank you for your valuable contribution!
                   </p>
                 </div>
               </motion.div>
