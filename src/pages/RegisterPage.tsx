@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, Loader2, ArrowRight, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { prompts, MODELS, METRICS } from '@/data/prompts';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -26,54 +27,45 @@ export default function RegisterPage() {
     consent &&
     !loading;
 
+  // Removed findFirstIncomplete as we no longer resume session using email lookup
+
   const handleSubmit = async () => {
     if (!canContinue || isEmailDuplicate) return;
     setError('');
     setLoading(true);
-    
+
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      
+
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(normalizedEmail)) {
         throw new Error('Please enter a valid email address.');
       }
-      
-      const { data: existingUser, error: checkError } = await supabase
-        .from('participants')
-        .select('id')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
+
+      // --- Check if email already exists via RPC ---
+      const { data: emailExists, error: checkError } = await supabase
+        .rpc('check_participant_email', { check_email: normalizedEmail });
 
       if (checkError) {
-        throw new Error('Something went wrong while verifying your email. Please try again.');
+        throw new Error('Unable to verify your email. Please try again.');
       }
 
-      if (existingUser) {
+      if (emailExists) {
         setIsEmailDuplicate(true);
-        setLoading(false);
         return;
       }
 
+      // --- New user — create participant ---
       const { data, error: dbError } = await supabase
         .from('participants')
-        .insert([
-          {
-            name: name.trim(),
-            email: normalizedEmail,
-            gender,
-            profession: profession.trim(),
-            consent,
-          },
-        ])
+        .insert([{ name: name.trim(), email: normalizedEmail, gender, profession: profession.trim(), consent }])
         .select('id')
         .single();
 
       if (dbError) {
         if (dbError.code === '23505') {
-            setIsEmailDuplicate(true);
-            setLoading(false);
-            return;
+           setIsEmailDuplicate(true);
+           return;
         }
         throw new Error('Registration failed. Please try again.');
       }
@@ -83,6 +75,7 @@ export default function RegisterPage() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Registration failed. Please try again.';
       setError(msg);
+    } finally {
       setLoading(false);
     }
   };

@@ -5,6 +5,7 @@ import { Star, Loader2, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import { prompts, METRICS, MODELS } from '@/data/prompts';
 import { supabase } from '@/lib/supabase';
 import ImageWithFallback from '@/components/ImageWithFallback';
+import NotFoundPage from './NotFoundPage';
 
 // Deterministic shuffle: same seed → same order, so navigating back keeps order
 function seededShuffle(arr: string[], seed: string): string[] {
@@ -53,7 +54,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
-type SaveStatus = 'idle' | 'saving' | 'saved';
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export default function EvaluatePage() {
   const { promptId } = useParams<{ promptId: string }>();
@@ -65,43 +66,76 @@ export default function EvaluatePage() {
   const [shuffledModels, setShuffledModels] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [firstIncompleteId, setFirstIncompleteId] = useState<number>(1);
 
   useEffect(() => {
-    const pid = localStorage.getItem('participantId');
-    if (!pid) {
-      navigate('/register');
-      return;
-    }
-    setParticipantId(pid);
-    setShuffledModels(seededShuffle(MODELS, `${pid}-${promptNumber}`));
-    setRatings({});
-    setSaveStatus('idle');
-  }, [promptNumber, navigate]);
+    let isMounted = true;
 
-  // Load existing answers if any to prevent loss of state on navigation
-  useEffect(() => {
-    async function loadSaved() {
-      if (!participantId) return;
+    async function initializeSession() {
+      if (!prompt) return; // Skips if invalid prompt
+
+      const pid = localStorage.getItem('participantId');
+      if (!pid) {
+        if (isMounted) navigate('/register', { replace: true });
+        return;
+      }
+
       try {
-        const { data } = await supabase
-          .from('responses')
-          .select('actual_model,metric_name,rating')
-          .eq('participant_id', participantId)
-          .eq('prompt_number', promptNumber);
-        
-        if (data) {
-          const loaded: Record<string, number> = {};
-          data.forEach((r) => {
-            loaded[`${r.actual_model}::${r.metric_name}`] = r.rating;
+        const { data: allResponses, error } = await supabase
+          .rpc('get_participant_responses', { pid });
+
+        if (error) throw error;
+
+        const counts: Record<number, number> = {};
+        const currentPromptRatings: Record<string, number> = {};
+
+        if (allResponses) {
+          (allResponses as any[]).forEach((r: any) => {
+            counts[r.prompt_number] = (counts[r.prompt_number] || 0) + 1;
+            if (r.prompt_number === promptNumber) {
+              currentPromptRatings[`${r.actual_model}::${r.metric_name}`] = r.rating;
+            }
           });
-          setRatings(loaded);
+        }
+
+        const TOTAL_PER_PROMPT = MODELS.length * METRICS.length;
+
+        // Find first prompt not yet fully completed — clean array-find approach
+        const firstIncomplete = prompts.find((p) => (counts[p.id] || 0) < TOTAL_PER_PROMPT);
+        const firstIncompletePromptId = firstIncomplete ? firstIncomplete.id : -1;
+
+        if (isMounted) {
+          if (firstIncompletePromptId === -1) {
+            navigate('/thankyou', { replace: true });
+            return;
+          }
+
+          if (promptNumber !== firstIncompletePromptId) {
+            navigate(`/evaluate/${firstIncompletePromptId}`, { replace: true });
+            return;
+          }
+
+          setParticipantId(pid);
+          setShuffledModels(seededShuffle(MODELS, `${pid}-${promptNumber}`));
+          setRatings(currentPromptRatings);
+          setSaveStatus('idle');
+          setFirstIncompleteId(firstIncompletePromptId);
+          setIsVerifying(false);
         }
       } catch (err) {
-        console.error('Error loading saved ratings:', err);
+        console.error('Session initialization error:', err);
+        if (isMounted) setIsVerifying(false);
       }
     }
-    loadSaved();
-  }, [participantId, promptNumber]);
+
+    setIsVerifying(true);
+    initializeSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [promptNumber, navigate, prompt]);
 
   const handleRating = useCallback(
     async (model: string, metric: string, value: number, displayPos: number) => {
@@ -109,7 +143,7 @@ export default function EvaluatePage() {
       setRatings((prev) => ({ ...prev, [key]: value }));
       setSaveStatus('saving');
       try {
-        await supabase.from('responses').upsert(
+        const { error } = await supabase.from('responses').upsert(
           [
             {
               participant_id: participantId,
@@ -122,27 +156,25 @@ export default function EvaluatePage() {
           ],
           { onConflict: 'participant_id,prompt_number,actual_model,metric_name' }
         );
+        if (error) throw error;
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 1500);
       } catch {
-        setSaveStatus('idle');
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
       }
     },
     [participantId, promptNumber]
   );
 
   if (!prompt) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-zinc-400">
-        Prompt not found.
-      </div>
-    );
+    return <NotFoundPage />;
   }
 
-  if (!shuffledModels.length || !participantId) {
+  if (isVerifying || !shuffledModels.length || !participantId) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
+      <div className="min-h-screen dashboard-gradient-bg flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin" />
       </div>
     );
   }
@@ -159,19 +191,26 @@ export default function EvaluatePage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">
           {/* Prompt Tabs */}
           <div className="flex gap-1 overflow-x-auto pb-0.5 hide-scrollbar">
-            {prompts.map((p) => (
-              <Link
-                key={p.id}
-                to={`/evaluate/${p.id}`}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-                  p.id === promptNumber
-                    ? 'bg-zinc-900 text-zinc-50 shadow-sm border border-zinc-950'
-                    : 'bg-white/30 text-zinc-500 hover:bg-white/50 hover:text-zinc-800 border border-white/20'
-                }`}
-              >
-                P{p.id}
-              </Link>
-            ))}
+            {prompts.map((p) => {
+              const isLocked = p.id > firstIncompleteId;
+              return (
+                <Link
+                  key={p.id}
+                  to={isLocked ? '#' : `/evaluate/${p.id}`}
+                  onClick={isLocked ? (e) => e.preventDefault() : undefined}
+                  aria-disabled={isLocked}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                    p.id === promptNumber
+                      ? 'bg-zinc-900 text-zinc-50 shadow-sm border border-zinc-950'
+                      : isLocked
+                      ? 'bg-white/10 text-zinc-300 border border-white/10 cursor-not-allowed'
+                      : 'bg-white/30 text-zinc-500 hover:bg-white/50 hover:text-zinc-800 border border-white/20'
+                  }`}
+                >
+                  P{p.id}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Sync & Progress Status */}
@@ -183,7 +222,7 @@ export default function EvaluatePage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -5 }}
                   className={`text-xs font-bold flex items-center gap-1 ${
-                    saveStatus === 'saving' ? 'text-[#2563EB]' : 'text-[#15803D]'
+                    saveStatus === 'saving' ? 'text-[#2563EB]' : saveStatus === 'error' ? 'text-red-600' : 'text-[#15803D]'
                   }`}
                 >
                   {saveStatus === 'saving' ? (
@@ -191,6 +230,8 @@ export default function EvaluatePage() {
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span>Saving</span>
                     </>
+                  ) : saveStatus === 'error' ? (
+                    <span>Unable to save your rating. Please try again.</span>
                   ) : (
                     <>
                       <Check className="w-3.5 h-3.5" />

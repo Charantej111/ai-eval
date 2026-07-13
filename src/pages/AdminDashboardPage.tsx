@@ -46,6 +46,7 @@ import {
 import { prompts, METRICS, MODELS } from '@/data/prompts';
 import { supabase } from '@/lib/supabase';
 import PodiumCard from '@/components/PodiumCard';
+import * as XLSX from 'xlsx';
 
 const MODEL_LABELS: Record<string, string> = {
   Model_A: 'GPT Image 1',
@@ -107,6 +108,7 @@ export default function AdminDashboardPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [responses, setResponses] = useState<RatingRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'responses' | 'participants'>('overview');
   
   // Search & Filters for Logs/Participants
@@ -119,22 +121,34 @@ export default function AdminDashboardPage() {
     navigate('/admin/login');
   };
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [{ data: ps }, { data: rs }] = await Promise.all([
-          supabase.from('participants').select('*').order('created_at', { ascending: false }),
-          supabase.from('responses').select('*'),
-        ]);
-        setParticipants(ps ?? []);
-        setResponses(rs ?? []);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-      } finally {
+  const loadData = async () => {
+    setLoading(true);
+    setFetchError(false);
+    try {
+      const [{ data: ps, error: psErr }, { data: rs, error: rsErr }] = await Promise.all([
+        supabase.rpc('get_all_participants'),
+        supabase.rpc('get_all_responses'),
+      ]);
+      
+      if (psErr || rsErr) {
+        console.error('RPC Error:', psErr || rsErr);
+        setFetchError(true);
         setLoading(false);
+        return;
       }
+      
+      setParticipants(ps ?? []);
+      setResponses(rs ?? []);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setFetchError(true);
+    } finally {
+      setLoading(false);
     }
-    load();
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   // Compute overall stats
@@ -196,38 +210,41 @@ export default function AdminDashboardPage() {
     };
   });
 
-  // Export CSV function
+  // Export XLSX function
   const handleExport = () => {
-    const lines: string[] = [];
-    lines.push('=== STUDY PARTICIPANTS ===');
-    lines.push('ID,Name,Email,Gender,Profession,Created At');
-    participants.forEach((p) =>
-      lines.push(`"${p.id}","${p.name}","${p.email}","${p.gender}","${p.profession}","${p.created_at}"`)
-    );
-    lines.push('');
-    lines.push('=== MODEL EVALUATION LEADERBOARD ===');
-    lines.push('Rank,Model ID,Model Name,Overall Rating (out of 5)');
-    modelStats.forEach((m, idx) =>
-      lines.push(`"${idx + 1}","${m.model}","${m.label}","${m.overallAvg}"`)
-    );
-    lines.push('');
-    lines.push('=== RAW RATINGS DATA ===');
-    lines.push('Participant ID,Prompt Number,Displayed Position,Actual Model,Metric Name,Rating Value');
-    responses.forEach((r) =>
-      lines.push(
-        `"${r.participant_id}","${r.prompt_number}","${r.displayed_position}","${r.actual_model}","${r.metric_name}","${r.rating}"`
-      )
-    );
+    const wsParticipants = XLSX.utils.json_to_sheet(participants);
+    const wsRatings = XLSX.utils.json_to_sheet(responses);
 
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `ai_study_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const aggData: any[] = [];
+    modelStats.forEach(m => {
+      m.metricAvgs.forEach(metric => {
+        aggData.push({
+          Model: m.label,
+          Metric: metric.metric,
+          AverageScore: metric.value
+        });
+      });
+    });
+    const wsAggregated = XLSX.utils.json_to_sheet(aggData);
+
+    const lbData = modelStats.map((m, idx) => ({
+      Rank: idx + 1,
+      ModelID: m.model,
+      ModelName: m.label,
+      OverallAverage: m.overallAvg,
+      TotalReviews: m.totalReviews,
+      BestMetric: m.bestMetric,
+      WorstMetric: m.worstMetric
+    }));
+    const wsLeaderboard = XLSX.utils.json_to_sheet(lbData);
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsParticipants, "Participants");
+    XLSX.utils.book_append_sheet(wb, wsRatings, "Raw Ratings");
+    XLSX.utils.book_append_sheet(wb, wsAggregated, "Aggregated Results");
+    XLSX.utils.book_append_sheet(wb, wsLeaderboard, "Leaderboard");
+
+    XLSX.writeFile(wb, `AI_Evaluation_Data_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Filter logs data
@@ -253,6 +270,30 @@ export default function AdminDashboardPage() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-[#2563EB] animate-spin" strokeWidth={1.5} />
           <span className="text-[11px] text-[#6B7280] font-medium tracking-wide">Loading analytics...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen dashboard-gradient-bg flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white/70 backdrop-blur-xl border border-white/50 rounded-[24px] p-8 flex flex-col items-center text-center space-y-4 shadow-xl">
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center shadow-sm">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold text-zinc-900">Dashboard Unavailable</h2>
+            <p className="text-sm text-zinc-500">
+              There was a problem loading the evaluation analytics.
+            </p>
+          </div>
+          <button
+            onClick={loadData}
+            className="mt-4 px-6 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
+          >
+            Retry Connection
+          </button>
         </div>
       </div>
     );

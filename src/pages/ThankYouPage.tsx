@@ -1,7 +1,12 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Lock } from 'lucide-react';
 
 export default function ThankYouPage() {
+  // Clear session so the participant can't re-enter the evaluation flow
+  useEffect(() => {
+    localStorage.removeItem('participantId');
+  }, []);
   return (
     <div className="min-h-screen flex items-center justify-center p-6 dashboard-gradient-bg">
       <motion.div

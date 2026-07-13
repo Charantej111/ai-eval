@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, ArrowRight, Shield } from 'lucide-react';
+import { prompts, MODELS, METRICS } from '@/data/prompts';
 
 export default function LandingPage() {
   return (
@@ -42,9 +43,9 @@ export default function LandingPage() {
         {/* Stats */}
         <div className="my-7 py-5 grid grid-cols-3 gap-4 border-t border-b border-white/50">
           {[
-            { val: '6', label: 'Prompts' },
-            { val: '3', label: 'Models' },
-            { val: '7', label: 'Metrics' },
+            { val: String(prompts.length), label: 'Prompts' },
+            { val: String(MODELS.length), label: 'Models' },
+            { val: String(METRICS.length), label: 'Metrics' },
           ].map((s, i) => (
             <div key={i} className={`space-y-0.5 ${i === 1 ? 'border-l border-r border-white/50' : ''}`}>
               <div className="text-xl font-bold text-[#2563EB]">{s.val}</div>
