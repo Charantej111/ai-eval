@@ -144,5 +144,3 @@ The compiled static assets will output to the `dist/` directory.
 
 ---
 
-## 🔐 Credentials
-- **Admin Password:** `joshtalks` (editable via `VITE_ADMIN_PASSWORD` in `.env.local`)
