@@ -6,6 +6,7 @@ import EvaluatePage from './pages/EvaluatePage';
 import ThankYouPage from './pages/ThankYouPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
   const isAuth = sessionStorage.getItem('admin_session') === 'authenticated';
@@ -31,7 +32,7 @@ export default function App() {
             </ProtectedAdminRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

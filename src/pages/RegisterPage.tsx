@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { AlertCircle, Loader2, ArrowRight, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function RegisterPage() {
@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isEmailDuplicate, setIsEmailDuplicate] = useState(false);
 
   const canContinue =
     name.trim().length > 0 &&
@@ -26,16 +27,40 @@ export default function RegisterPage() {
     !loading;
 
   const handleSubmit = async () => {
-    if (!canContinue) return;
+    if (!canContinue || isEmailDuplicate) return;
     setError('');
     setLoading(true);
+    
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        throw new Error('Please enter a valid email address.');
+      }
+      
+      const { data: existingUser, error: checkError } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (checkError) {
+        throw new Error('Something went wrong while verifying your email. Please try again.');
+      }
+
+      if (existingUser) {
+        setIsEmailDuplicate(true);
+        setLoading(false);
+        return;
+      }
+
       const { data, error: dbError } = await supabase
         .from('participants')
         .insert([
           {
             name: name.trim(),
-            email: email.trim(),
+            email: normalizedEmail,
             gender,
             profession: profession.trim(),
             consent,
@@ -44,13 +69,20 @@ export default function RegisterPage() {
         .select('id')
         .single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        if (dbError.code === '23505') {
+            setIsEmailDuplicate(true);
+            setLoading(false);
+            return;
+        }
+        throw new Error('Registration failed. Please try again.');
+      }
+
       localStorage.setItem('participantId', data.id);
       navigate('/instructions');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Registration failed. Please try again.';
       setError(msg);
-    } finally {
       setLoading(false);
     }
   };
@@ -198,7 +230,23 @@ export default function RegisterPage() {
         {/* Actions */}
         <div className="space-y-3 pt-2">
           <AnimatePresence mode="wait">
-            {error && (
+            {isEmailDuplicate ? (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex flex-col items-center justify-center p-5 space-y-3 text-center bg-emerald-50/80 backdrop-blur-md border border-emerald-200/50 rounded-xl mb-4 overflow-hidden"
+              >
+                <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-sm">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[#15803D] font-medium text-sm leading-relaxed">
+                    It looks like you've already participated in this evaluation. Thank you for your valuable contribution!
+                  </p>
+                </div>
+              </motion.div>
+            ) : error ? (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -208,10 +256,10 @@ export default function RegisterPage() {
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
 
-          {!canContinue && !error && (
+          {!canContinue && !error && !isEmailDuplicate && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -222,24 +270,24 @@ export default function RegisterPage() {
           )}
 
           <motion.button
-            whileHover={{ y: canContinue ? -1 : 0 }}
-            whileTap={{ scale: canContinue ? 0.98 : 1 }}
+            whileHover={{ y: canContinue && !isEmailDuplicate ? -1 : 0 }}
+            whileTap={{ scale: canContinue && !isEmailDuplicate ? 0.98 : 1 }}
             type="button"
             onClick={handleSubmit}
-            disabled={!canContinue}
+            disabled={!canContinue || isEmailDuplicate}
             className="w-full inline-flex items-center justify-center font-medium text-[14px] py-3 transition-all"
             style={{
-              backgroundColor: canContinue ? '#2563EB' : '#E8E8E6',
-              color: canContinue ? '#FFFFFF' : '#9CA3AF',
+              backgroundColor: canContinue && !isEmailDuplicate ? '#2563EB' : '#E8E8E6',
+              color: canContinue && !isEmailDuplicate ? '#FFFFFF' : '#9CA3AF',
               borderRadius: '12px',
-              cursor: canContinue ? 'pointer' : 'not-allowed',
-              boxShadow: canContinue ? '0 1px 3px rgba(37,99,235,0.3)' : 'none',
+              cursor: canContinue && !isEmailDuplicate ? 'pointer' : 'not-allowed',
+              boxShadow: canContinue && !isEmailDuplicate ? '0 1px 3px rgba(37,99,235,0.3)' : 'none',
             }}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Registering...</span>
+                <span>Verifying...</span>
               </span>
             ) : (
               <span className="flex items-center justify-center gap-1.5">
