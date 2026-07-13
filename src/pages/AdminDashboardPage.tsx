@@ -93,7 +93,11 @@ function avg(arr: number[]) {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 }const getModelLogo = (model: string, className = "w-6 h-6") => {
   if (model === 'Model_A') {
-    return <img src="/images/openai-chatgpt.svg" alt="OpenAI Logo" className={`${className} object-contain`} />;
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={`${className} text-[#10A37F] fill-current object-contain`} style={{ display: 'block' }}>
+        <path d="M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523zm5.899 2.83a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713z" />
+      </svg>
+    );
   }
   return <img src="/images/gemini-logo.svg" alt="Gemini Logo" className={`${className} object-contain`} />;
 };
@@ -342,7 +346,79 @@ export default function AdminDashboardPage() {
             >
               {/* -------------------- SECTION 1: LEADERBOARD HERO COMPONENT -------------------- */}
               {/* -------------------- SECTION 1: LEADERBOARD HERO COMPONENT -------------------- */}
-              <div className="glass-card rounded-[20px] p-5 md:p-6 flex flex-col gap-6 relative overflow-hidden">
+              <div 
+                className="rounded-[28px] border p-6 md:p-8 flex flex-col gap-8 relative overflow-hidden transition-all duration-300 bg-white/60 backdrop-blur-3xl"
+                style={{
+                  borderColor: 'rgba(255, 255, 255, 0.8)',
+                  boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.9), 0 16px 36px rgba(0,0,0,0.03)',
+                }}
+              >
+                {/* Subtle Mesh Lighting (opacity below 8%) */}
+                <div 
+                  className="absolute inset-0 pointer-events-none z-0 opacity-[0.06]"
+                  style={{
+                    backgroundImage: `
+                      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.3) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, rgba(37, 99, 235, 0.25) 0px, transparent 50%),
+                      radial-gradient(at 50% 100%, rgba(244, 63, 94, 0.15) 0px, transparent 50%)
+                    `,
+                  }}
+                />
+
+                {/* Large soft radial spotlight centered behind Rank 1 (left side in lg screens) */}
+                <div 
+                  className="absolute bottom-[-10%] left-[25%] -translate-x-1/2 w-[600px] h-[600px] rounded-full pointer-events-none z-0 hidden lg:block"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(37, 99, 235, 0.16) 0%, rgba(99, 102, 241, 0.05) 50%, rgba(250, 250, 248, 0) 70%)',
+                    filter: 'blur(60px)',
+                  }}
+                />
+                
+                {/* Mobile Spotlight (centered) */}
+                <div 
+                  className="absolute bottom-[25%] left-1/2 -translate-x-1/2 w-[380px] h-[380px] rounded-full pointer-events-none z-0 lg:hidden"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(37, 99, 235, 0.16) 0%, rgba(99, 102, 241, 0.05) 50%, rgba(250, 250, 248, 0) 70%)',
+                    filter: 'blur(45px)',
+                  }}
+                />
+
+                {/* Elegant floating circles, rings and diamonds */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                  {[
+                    { top: '8%', left: '8%', type: 'ring', size: 24 },
+                    { top: '15%', left: '92%', type: 'circle', size: 10 },
+                    { top: '30%', left: '88%', type: 'diamond', size: 14 },
+                    { top: '48%', left: '5%', type: 'ring', size: 32 },
+                    { top: '75%', left: '94%', type: 'circle', size: 8 },
+                    { top: '85%', left: '12%', type: 'diamond', size: 12 },
+                    { top: '12%', left: '45%', type: 'ring', size: 28 },
+                    { top: '65%', left: '40%', type: 'circle', size: 8 },
+                  ].map((item, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ y: [0, -12, 0], rotate: item.type === 'diamond' ? [45, 75, 45] : [0, 360] }}
+                      transition={{ duration: 8 + (i % 3) * 2, repeat: Infinity, ease: "easeInOut" }}
+                      className="absolute"
+                      style={{
+                        top: item.top,
+                        left: item.left,
+                        width: item.size,
+                        height: item.size,
+                      }}
+                    >
+                      {item.type === 'circle' && (
+                        <div className="w-full h-full rounded-full bg-zinc-400/10 border border-zinc-400/20" />
+                      )}
+                      {item.type === 'ring' && (
+                        <div className="w-full h-full rounded-full border-[1.5px] border-zinc-400/20 bg-transparent" />
+                      )}
+                      {item.type === 'diamond' && (
+                        <div className="w-full h-full bg-zinc-400/8 border border-zinc-400/20 rounded-[3px]" style={{ transform: 'rotate(45deg)' }} />
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
 
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-zinc-200/50 pb-4 z-10 relative">
@@ -356,50 +432,27 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   
-                  <div className="inline-flex items-center gap-1.5 bg-[#F4F4F2] border border-[#E8E8E6] px-3 py-1.5 rounded-lg text-xs font-semibold text-[#3A3A3A]">
+                  <div className="inline-flex items-center gap-1.5 bg-[#F4F4F2]/80 border border-[#E8E8E6] px-3 py-1.5 rounded-lg text-xs font-semibold text-[#3A3A3A] backdrop-blur-xs">
                     <Activity className="w-3.5 h-3.5 text-[#6B7280]" />
                     <span>{responses.length} Reviews</span>
                   </div>
                 </div>
 
-                {/* Confetti Background - Curated Static sprinkles to avoid random jumps on re-render */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-                  {[
-                    { top: '10%', left: '8%', color: '#3B82F6', shape: 'circle', size: 6 },
-                    { top: '15%', left: '88%', color: '#F59E0B', shape: 'diamond', size: 8 },
-                    { top: '25%', left: '15%', color: '#EC4899', shape: 'star', size: 7 },
-                    { top: '35%', left: '92%', color: '#10B981', shape: 'circle', size: 5 },
-                    { top: '48%', left: '4%', color: '#8B5CF6', shape: 'diamond', size: 8 },
-                    { top: '65%', left: '86%', color: '#3B82F6', shape: 'circle', size: 6 },
-                    { top: '75%', left: '12%', color: '#EF4444', shape: 'star', size: 7 },
-                    { top: '80%', left: '82%', color: '#F59E0B', shape: 'circle', size: 5 },
-                    { top: '20%', left: '48%', color: '#A7F3D0', shape: 'circle', size: 6 },
-                  ].map((s, i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ y: [0, -6, 0], rotate: s.shape === 'diamond' ? [45, 55, 45] : [0, 15, 0] }}
-                      transition={{ duration: 5 + (i % 3) * 2, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute"
-                      style={{ top: s.top, left: s.left }}
-                    >
-                      {s.shape === 'circle' && (
-                        <div className="rounded-full" style={{ width: s.size, height: s.size, backgroundColor: s.color, opacity: 0.15 }} />
-                      )}
-                      {s.shape === 'diamond' && (
-                        <div style={{ width: s.size, height: s.size, backgroundColor: s.color, transform: 'rotate(45deg)', borderRadius: '1px', opacity: 0.15 }} />
-                      )}
-                      {s.shape === 'star' && (
-                        <span style={{ color: s.color, fontSize: s.size + 4, lineHeight: 1, opacity: 0.18 }}>✦</span>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-
                 {/* Grid Wrapper for Podium and Breakdown */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch z-10 relative">
-                  
-                  {/* Podium (6 cols) */}
-                  <div className="lg:col-span-6 flex items-end justify-center gap-1.5 xs:gap-2 sm:gap-6 min-h-[380px] sm:min-h-[480px] bg-white/40 backdrop-blur-xl rounded-[24px] border border-white/50 p-3 sm:p-6 pb-6 relative overflow-hidden shadow-xs">
+                                 {/* Podium Stage Container (6 cols) */}
+                  <div 
+                    className="lg:col-span-6 flex items-end justify-center gap-1.5 xs:gap-2 sm:gap-6 min-h-[380px] sm:min-h-[480px] rounded-[24px] border p-4 sm:p-8 pb-8 relative overflow-hidden transition-all duration-300 z-10"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(248, 250, 252, 0.3) 100%)',
+                      backdropFilter: 'blur(24px)',
+                      WebkitBackdropFilter: 'blur(24px)',
+                      borderColor: 'rgba(255, 255, 255, 0.75)',
+                      boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.8), 0 12px 32px rgba(0, 0, 0, 0.02)',
+                    }}
+                  >
+
+
                     <div className="flex justify-center items-end gap-1.5 xs:gap-3 sm:gap-5 w-full h-full z-20 relative">
                       {/* 2nd place */}
                       {modelStats[1] && (
@@ -417,22 +470,51 @@ export default function AdminDashboardPage() {
 
                             {/* Podium Block */}
                             <div 
-                              className="w-full h-[150px] xs:h-[190px] sm:h-[220px] rounded-t-[20px] sm:rounded-t-[24px] flex flex-col items-center pt-8 sm:pt-11 relative z-10"
+                              className="w-full h-[150px] xs:h-[190px] sm:h-[220px] rounded-t-[22px] sm:rounded-t-[26px] flex flex-col items-center pt-8 sm:pt-11 relative z-10 overflow-hidden"
                               style={{ 
-                                background: 'linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%)',
-                                boxShadow: 'inset 0 4px 12px rgba(255,255,255,0.9), inset 0 -4px 12px rgba(0,0,0,0.05), 0 12px 24px rgba(0,0,0,0.06)',
-                                borderTop: '2px solid white'
+                                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(241, 245, 249, 0.25) 100%)',
+                                backdropFilter: 'blur(20px)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                                borderTop: '2px solid rgba(255, 255, 255, 0.9)',
+                                borderLeft: '1.5px solid rgba(255, 255, 255, 0.6)',
+                                borderRight: '1px solid rgba(148, 163, 184, 0.15)',
+                                borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
+                                boxShadow: 'inset 0 1.5px 3px rgba(255, 255, 255, 0.6), 0 8px 24px rgba(148, 163, 184, 0.05)'
                               }}
                             >
-                              <span className="text-[#1E3A8A] font-black text-2xl xs:text-3xl sm:text-4xl drop-shadow-sm mb-0.5 leading-none">2</span>
-                              <span className="text-[9px] xs:text-[11px] sm:text-xs font-bold text-[#1E3A8A] text-center px-1.5 xs:px-2.5 leading-snug">{modelStats[1].label}</span>
-                              <div className="flex items-center gap-0.5 xs:gap-1 mt-1 shrink-0">
-                                <span className="text-[#1D4ED8] font-black text-[11px] xs:text-xs sm:text-sm">{modelStats[1].overallAvg.toFixed(2)}</span>
-                                <Star className="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 text-[#2563EB] fill-[#2563EB]" />
+                              {/* Silver Core Glow */}
+                              <div 
+                                className="absolute inset-0 pointer-events-none z-0 opacity-25 mix-blend-screen"
+                                style={{
+                                  background: 'radial-gradient(circle at 50% 70%, rgba(148, 163, 184, 0.3) 0%, transparent 65%)',
+                                }}
+                              />
+
+                              {/* Polished Glass Refraction Effect */}
+                              <div 
+                                className="absolute inset-x-0 top-0 h-[40%] pointer-events-none"
+                                style={{
+                                  background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)',
+                                }}
+                              />
+                              <span className="text-[#475569] font-black text-3xl xs:text-4xl sm:text-5xl drop-shadow-sm mb-0.5 leading-none z-10">2</span>
+                              <span className="text-[11px] xs:text-[13px] sm:text-[15px] font-bold text-[#475569] text-center px-1.5 xs:px-2.5 mt-0.5 leading-snug z-10">{modelStats[1].label}</span>
+                              <div className="flex items-center gap-1 mt-1.5 shrink-0 z-10">
+                                <span className="text-[#3B82F6] font-black text-xs xs:text-sm sm:text-base">{modelStats[1].overallAvg.toFixed(2)}</span>
+                                <Star className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 text-[#3B82F6] fill-[#3B82F6]" />
                               </div>
                             </div>
-                            {/* Podium Base */}
-                            <div className="w-[110%] h-5 sm:h-6 rounded-[8px] bg-gradient-to-b from-[#E2E8F0] to-[#94A3B8] -mt-2 z-0" style={{ boxShadow: '0 8px 16px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.5)' }} />
+                            
+                            {/* Premium Glass Base Plate */}
+                            <div 
+                              className="w-[108%] h-1.5 rounded-full z-10 -mt-1"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%)',
+                                border: '1px solid rgba(203, 213, 225, 0.7)',
+                                boxShadow: '0 4px 10px rgba(148, 163, 184, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.9)',
+                              }}
+                            />
+
                           </motion.div>
                         </div>
                       )}
@@ -453,22 +535,51 @@ export default function AdminDashboardPage() {
 
                             {/* Podium Block */}
                             <div 
-                              className="w-full h-[200px] xs:h-[250px] sm:h-[300px] rounded-t-[24px] sm:rounded-t-[28px] flex flex-col items-center pt-10 sm:pt-14 relative z-10"
+                              className="w-full h-[200px] xs:h-[250px] sm:h-[300px] rounded-t-[24px] sm:rounded-t-[28px] flex flex-col items-center pt-10 sm:pt-14 relative z-10 overflow-hidden"
                               style={{ 
-                                background: 'linear-gradient(180deg, #6366F1 0%, #2563EB 100%)',
-                                boxShadow: 'inset 0 4px 16px rgba(255,255,255,0.4), inset 0 -4px 12px rgba(0,0,0,0.2), 0 16px 32px rgba(37,99,235,0.3)',
-                                borderTop: '2px solid rgba(255,255,255,0.6)'
+                                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(79, 70, 229, 0.12) 100%)',
+                                backdropFilter: 'blur(20px)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                                borderTop: '2px solid rgba(165, 180, 252, 0.7)',
+                                borderLeft: '1.5px solid rgba(165, 180, 252, 0.4)',
+                                borderRight: '1px solid rgba(79, 70, 229, 0.15)',
+                                borderBottom: '1px solid rgba(79, 70, 229, 0.2)',
+                                boxShadow: 'inset 0 1.5px 3px rgba(255, 255, 255, 0.4), 0 12px 28px rgba(79, 70, 229, 0.08)'
                               }}
                             >
-                              <span className="text-white font-black text-4xl xs:text-5xl sm:text-6xl drop-shadow-md mb-0.5 leading-none">1</span>
-                              <span className="text-[10px] xs:text-[12px] sm:text-[13px] font-bold text-white text-center px-1.5 xs:px-2.5 mt-1 sm:mt-2 leading-snug">{modelStats[0].label}</span>
-                              <div className="flex items-center gap-0.5 xs:gap-1 mt-1 shrink-0">
-                                <span className="text-white font-black text-xs xs:text-sm sm:text-base drop-shadow-sm">{modelStats[0].overallAvg.toFixed(2)}</span>
-                                <Star className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 text-[#FDE047] fill-[#FDE047] drop-shadow-sm" />
+                              {/* Indigo/Blue Core Glow */}
+                              <div 
+                                className="absolute inset-0 pointer-events-none z-0 opacity-40 mix-blend-screen"
+                                style={{
+                                  background: 'radial-gradient(circle at 50% 70%, rgba(99, 102, 241, 0.45) 0%, transparent 65%)',
+                                }}
+                              />
+
+                              {/* Polished Glass Refraction Effect */}
+                              <div 
+                                className="absolute inset-x-0 top-0 h-[40%] pointer-events-none"
+                                style={{
+                                  background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)',
+                                }}
+                              />
+                              <span className="text-[#4F46E5] font-black text-5xl xs:text-6xl sm:text-7xl drop-shadow-sm mb-0.5 leading-none z-10">1</span>
+                              <span className="text-[12px] xs:text-[14px] sm:text-[16px] font-bold text-[#3730A3] text-center px-1.5 xs:px-2.5 mt-1 sm:mt-2 leading-snug z-10">{modelStats[0].label}</span>
+                              <div className="flex items-center gap-1 mt-1.5 shrink-0 z-10">
+                                <span className="text-[#4F46E5] font-black text-sm xs:text-base sm:text-lg drop-shadow-sm">{modelStats[0].overallAvg.toFixed(2)}</span>
+                                <Star className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-[#F59E0B] fill-[#F59E0B] drop-shadow-sm" />
                               </div>
                             </div>
-                            {/* Podium Base */}
-                            <div className="w-[110%] h-5 sm:h-6 rounded-[8px] bg-gradient-to-b from-[#3B82F6] to-[#1D4ED8] -mt-2 z-0" style={{ boxShadow: '0 8px 20px rgba(37,99,235,0.4), inset 0 2px 4px rgba(255,255,255,0.3)' }} />
+                            
+                            {/* Premium Glass Base Plate */}
+                            <div 
+                              className="w-[108%] h-1.5 rounded-full z-10 -mt-1"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%)',
+                                border: '1px solid rgba(165, 180, 252, 0.6)',
+                                boxShadow: '0 6px 15px rgba(99, 102, 241, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.8)',
+                              }}
+                            />
+
                           </motion.div>
                         </div>
                       )}
@@ -489,22 +600,51 @@ export default function AdminDashboardPage() {
 
                             {/* Podium Block */}
                             <div 
-                              className="w-full h-[120px] xs:h-[150px] sm:h-[170px] rounded-t-[20px] sm:rounded-t-[24px] flex flex-col items-center pt-8 sm:pt-11 relative z-10"
+                              className="w-full h-[120px] xs:h-[150px] sm:h-[170px] rounded-t-[20px] sm:rounded-t-[24px] flex flex-col items-center pt-8 sm:pt-11 relative z-10 overflow-hidden"
                               style={{ 
-                                background: 'linear-gradient(180deg, #F59E0B 0%, #D97706 100%)',
-                                boxShadow: 'inset 0 4px 12px rgba(255, 255, 255, 0.4), inset 0 -4px 12px rgba(0,0,0,0.15), 0 12px 24px rgba(217,119,6,0.2)',
-                                borderTop: '2px solid rgba(255,255,255,0.5)'
+                                background: 'linear-gradient(135deg, rgba(254, 243, 199, 0.22) 0%, rgba(251, 191, 36, 0.06) 100%)',
+                                backdropFilter: 'blur(20px)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                                borderTop: '2px solid rgba(252, 211, 77, 0.6)',
+                                borderLeft: '1.5px solid rgba(252, 211, 77, 0.4)',
+                                borderRight: '1px solid rgba(217, 119, 6, 0.15)',
+                                borderBottom: '1px solid rgba(217, 119, 6, 0.2)',
+                                boxShadow: 'inset 0 1.5px 3px rgba(255, 255, 255, 0.5), 0 8px 24px rgba(217, 119, 6, 0.06)'
                               }}
                             >
-                              <span className="text-[#78350F] font-black text-2xl xs:text-3xl sm:text-4xl drop-shadow-sm mb-0.5 leading-none">3</span>
-                              <span className="text-[9px] xs:text-[11px] sm:text-xs font-bold text-white text-center px-1.5 xs:px-2.5 leading-snug">{modelStats[2].label}</span>
-                              <div className="flex items-center gap-0.5 xs:gap-1 mt-1 shrink-0">
-                                <span className="text-[#78350F] font-black text-[11px] xs:text-xs sm:text-sm">{modelStats[2].overallAvg.toFixed(2)}</span>
-                                <Star className="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 text-[#93C5FD] fill-[#93C5FD]" />
+                              {/* Amber/Bronze Core Glow */}
+                              <div 
+                                className="absolute inset-0 pointer-events-none z-0 opacity-30 mix-blend-screen"
+                                style={{
+                                  background: 'radial-gradient(circle at 50% 70%, rgba(251, 191, 36, 0.35) 0%, transparent 65%)',
+                                }}
+                              />
+
+                              {/* Polished Glass Refraction Effect */}
+                              <div 
+                                className="absolute inset-x-0 top-0 h-[40%] pointer-events-none"
+                                style={{
+                                  background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)',
+                                }}
+                              />
+                              <span className="text-[#9A3412] font-black text-3xl xs:text-4xl sm:text-5xl drop-shadow-sm mb-0.5 leading-none z-10">3</span>
+                              <span className="text-[11px] xs:text-[13px] sm:text-[15px] font-bold text-[#9A3412] text-center px-1.5 xs:px-2.5 mt-0.5 leading-snug z-10">{modelStats[2].label}</span>
+                              <div className="flex items-center gap-1 mt-1.5 shrink-0 z-10">
+                                <span className="text-[#9A3412] font-black text-xs xs:text-sm sm:text-base">{modelStats[2].overallAvg.toFixed(2)}</span>
+                                <Star className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 text-[#EA580C] fill-[#EA580C]" />
                               </div>
                             </div>
-                            {/* Podium Base */}
-                            <div className="w-[110%] h-5 sm:h-6 rounded-[8px] bg-gradient-to-b from-[#D97706] to-[#92400E] -mt-2 z-0" style={{ boxShadow: '0 8px 16px rgba(217,119,6,0.3), inset 0 2px 4px rgba(255,255,255,0.3)' }} />
+                            
+                            {/* Premium Glass Base Plate */}
+                            <div 
+                              className="w-[108%] h-1.5 rounded-full z-10 -mt-1"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%)',
+                                border: '1px solid rgba(253, 230, 138, 0.6)',
+                                boxShadow: '0 4px 10px rgba(217, 119, 6, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.9)',
+                              }}
+                            />
+
                           </motion.div>
                         </div>
                       )}
@@ -530,20 +670,20 @@ export default function AdminDashboardPage() {
                                     {idx + 1}
                                   </span>
                                   {getModelLogo(stat.model, "w-6 h-6")}
-                                  <span className="font-bold text-[#171717] text-base">{stat.label}</span>
+                                  <span className="font-bold text-[#171717] text-lg">{stat.label}</span>
                                 </div>
-                                <div className="flex items-center gap-2 bg-white/40 backdrop-blur-sm px-3.5 py-1.5 rounded-lg border border-white/50">
-                                  <span className="font-black text-[#171717] text-base">{stat.overallAvg.toFixed(2)}</span>
-                                  <span className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">Avg</span>
+                                <div className="flex items-center gap-2 bg-white/40 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/50">
+                                  <span className="font-black text-[#171717] text-lg">{stat.overallAvg.toFixed(2)}</span>
+                                  <span className="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Avg</span>
                                 </div>
                               </div>
                               
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 pt-3.5 border-t border-zinc-200/40 text-[13px] mt-1">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 pt-4 border-t border-zinc-200/40 text-sm mt-1.5">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <span className="text-[#15803D] font-bold shrink-0">↑ Strength:</span>
                                   <span className="text-[#3A3A3A] font-semibold truncate">{stat.bestMetric}</span>
                                 </div>
-                                <div className="hidden sm:block w-px h-4 bg-zinc-200/55" />
+                                <div className="hidden sm:block w-px h-5 bg-zinc-200/55" />
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <span className="text-[#DC2626] font-bold shrink-0">↓ Weakest:</span>
                                   <span className="text-[#3A3A3A] font-semibold truncate">{stat.worstMetric}</span>
