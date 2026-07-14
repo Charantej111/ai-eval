@@ -30,6 +30,7 @@ export default function AdminLoginPage() {
 
     if (password === adminPassword) {
       sessionStorage.setItem('admin_session', 'authenticated');
+      sessionStorage.setItem('adminPassword', password);
       navigate('/admin', { replace: true });
     } else {
       setError('Invalid password. Please check and try again.');

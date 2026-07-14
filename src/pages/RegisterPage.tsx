@@ -53,7 +53,7 @@ export default function RegisterPage() {
 
       const emailRecord = emailCheckData?.[0];
 
-      if (emailRecord) {
+      if (emailRecord && emailRecord.email_exists) {
         if (emailRecord.is_completed) {
           setIsEmailDuplicate(true);
           setLoading(false);
@@ -63,31 +63,9 @@ export default function RegisterPage() {
           const participantId = emailRecord.participant_id;
           localStorage.setItem('participantId', participantId);
           
-          const { data: savedResponses, error: responsesError } = await supabase
-            .rpc('get_participant_responses', { pid: participantId });
-            
-          if (responsesError) throw new Error('Unable to restore session data.');
-          
-          let nextPrompt = 1;
-          if (savedResponses && savedResponses.length > 0) {
-            const EXPECTED_PER_PROMPT = MODELS.length * METRICS.length;
-            const promptCounts: Record<number, number> = {};
-            
-            savedResponses.forEach((r: any) => {
-              promptCounts[r.prompt_number] = (promptCounts[r.prompt_number] || 0) + 1;
-            });
-            
-            for (let p = 1; p <= prompts.length; p++) {
-              if (promptCounts[p] >= EXPECTED_PER_PROMPT) {
-                nextPrompt = p + 1;
-              } else {
-                break;
-              }
-            }
-          }
+          const nextPrompt = emailRecord.next_prompt;
           
           if (nextPrompt > prompts.length) {
-            await supabase.rpc('mark_participant_completed', { pid: participantId });
             navigate('/thankyou');
             return;
           }
@@ -100,22 +78,21 @@ export default function RegisterPage() {
         }
       }
 
-      // --- New user — create participant ---
-      const { data, error: dbError } = await supabase
-        .from('participants')
-        .insert([{ name: name.trim(), email: normalizedEmail, gender, profession: profession.trim(), consent }])
-        .select('id')
-        .single();
+      // --- New user — create participant via RPC ---
+      const { data: newParticipantId, error: dbError } = await supabase
+        .rpc('register_participant', {
+          p_name: name.trim(),
+          p_email: normalizedEmail,
+          p_gender: gender,
+          p_profession: profession.trim(),
+          p_consent: consent
+        });
 
-      if (dbError) {
-        if (dbError.code === '23505') {
-           setIsEmailDuplicate(true);
-           return;
-        }
+      if (dbError || !newParticipantId) {
         throw new Error('Registration failed. Please try again.');
       }
 
-      localStorage.setItem('participantId', data.id);
+      localStorage.setItem('participantId', newParticipantId);
       navigate('/instructions');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Registration failed. Please try again.';

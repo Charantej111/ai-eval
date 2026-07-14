@@ -68,6 +68,7 @@ export default function EvaluatePage() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [isVerifying, setIsVerifying] = useState(true);
   const [firstIncompleteId, setFirstIncompleteId] = useState<number>(1);
+  const [globalProgressPct, setGlobalProgressPct] = useState<number>(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -82,50 +83,34 @@ export default function EvaluatePage() {
       }
 
       try {
-        const { data: allResponses, error } = await supabase
-          .rpc('get_participant_responses', { pid });
+        const { data, error } = await supabase
+          .rpc('get_participant_state', { pid, p_req_prompt: promptNumber });
 
         if (error) throw error;
-
-        const counts: Record<number, number> = {};
-        const currentPromptRatings: Record<string, number> = {};
-
-        if (allResponses) {
-          (allResponses as any[]).forEach((r: any) => {
-            counts[r.prompt_number] = (counts[r.prompt_number] || 0) + 1;
-            if (r.prompt_number === promptNumber) {
-              currentPromptRatings[`${r.actual_model}::${r.metric_name}`] = r.rating;
-            }
-          });
+        
+        const stateRecord = data?.[0];
+        
+        if (!stateRecord) {
+          throw new Error('Participant state not found');
         }
 
-        const TOTAL_PER_PROMPT = MODELS.length * METRICS.length;
-
-        // Find first prompt not yet fully completed — clean array-find approach
-        const firstIncomplete = prompts.find((p) => (counts[p.id] || 0) < TOTAL_PER_PROMPT);
-        const firstIncompletePromptId = firstIncomplete ? firstIncomplete.id : -1;
-
         if (isMounted) {
-          if (firstIncompletePromptId === -1) {
-            try {
-              await supabase.rpc('mark_participant_completed', { pid });
-            } catch (err) {
-              console.error(err);
-            }
+          if (stateRecord.is_completed) {
             navigate('/thankyou', { replace: true });
             return;
           }
 
-          if (promptNumber !== firstIncompletePromptId) {
-            navigate(`/evaluate/${firstIncompletePromptId}`, { replace: true });
+          if (promptNumber > stateRecord.next_prompt) {
+            navigate(`/evaluate/${stateRecord.next_prompt}`, { replace: true });
             return;
           }
 
           setParticipantId(pid);
           setShuffledModels(seededShuffle(MODELS, `${pid}-${promptNumber}`));
-          setRatings(currentPromptRatings);
+          setRatings(stateRecord.ratings_json || {});
           setSaveStatus('idle');
-          setFirstIncompleteId(firstIncompletePromptId);
+          setFirstIncompleteId(stateRecord.next_prompt);
+          setGlobalProgressPct(stateRecord.completion_percentage || 0);
           setIsVerifying(false);
         }
       } catch (err) {
@@ -187,7 +172,6 @@ export default function EvaluatePage() {
   const totalRequired = shuffledModels.length * METRICS.length;
   const totalRated = Object.keys(ratings).length;
   const isComplete = totalRated >= totalRequired;
-  const progressPct = Math.round((totalRated / totalRequired) * 100);
 
   return (
     <div className="min-h-screen pb-24 font-sans dashboard-gradient-bg">
@@ -251,10 +235,10 @@ export default function EvaluatePage() {
               <div className="w-16 bg-white/20 border border-white/40 rounded-full h-2 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-300"
-                  style={{ backgroundColor: '#2563EB', width: `${progressPct}%` }}
+                  style={{ backgroundColor: '#2563EB', width: `${globalProgressPct}%` }}
                 />
               </div>
-              <span className="text-[10px] font-bold" style={{ color: '#2563EB' }}>{progressPct}%</span>
+              <span className="text-[10px] font-bold" style={{ color: '#2563EB' }}>{globalProgressPct}%</span>
             </div>
           </div>
         </div>

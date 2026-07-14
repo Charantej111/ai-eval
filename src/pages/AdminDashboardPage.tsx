@@ -118,6 +118,7 @@ export default function AdminDashboardPage() {
 
   const handleLogout = () => {
     sessionStorage.removeItem('admin_session');
+    sessionStorage.removeItem('adminPassword');
     navigate('/admin/login');
   };
 
@@ -125,13 +126,25 @@ export default function AdminDashboardPage() {
     setLoading(true);
     setFetchError(false);
     try {
+      const adminPass = sessionStorage.getItem('adminPassword');
+      console.log('[DEBUG] Retrieved adminPassword from sessionStorage:', adminPass);
+      
+      if (!adminPass) {
+        console.warn('[DEBUG] adminPassword is null, forcing logout to re-authenticate.');
+        handleLogout();
+        return;
+      }
+
+      console.log('[DEBUG] Calling get_admin_participants with payload:', { admin_pass: adminPass });
       const [{ data: ps, error: psErr }, { data: rs, error: rsErr }] = await Promise.all([
-        supabase.rpc('get_all_participants'),
-        supabase.rpc('get_all_responses'),
+        supabase.rpc('get_admin_participants', { admin_pass: adminPass }),
+        supabase.rpc('get_admin_responses', { admin_pass: adminPass }),
       ]);
       
+      if (psErr) console.error('[DEBUG] get_admin_participants Error:', psErr);
+      if (rsErr) console.error('[DEBUG] get_admin_responses Error:', rsErr);
+      
       if (psErr || rsErr) {
-        console.error('RPC Error:', psErr || rsErr);
         setFetchError(true);
         setLoading(false);
         return;
