@@ -14,7 +14,7 @@ export const METRICS = [
   { key: "text_readability", label: "Text Readability", description: "Is the text easy to read and naturally placed?" },
   { key: "visual_appeal", label: "Visual Appeal", description: "Does the poster look attractive, balanced, and professional?" },
   { key: "business_usability", label: "Business Usability", description: "Could a small business post this directly on WhatsApp or Instagram without major edits?" },
-  { key: "overall_preference", label: "Overall Preference", description: "Which poster would you choose if you owned the business?" },
+  { key: "overall_preference", label: "Overall Performance", description: "If you were the business owner, how would you rate this poster overall?" },
 ];
 
 export const MODELS = ["Model_A", "Model_B", "Model_C"];
