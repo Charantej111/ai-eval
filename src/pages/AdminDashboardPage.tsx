@@ -122,6 +122,39 @@ export default function AdminDashboardPage() {
     navigate('/admin/login');
   };
 
+  const fetchAllFromRPC = async <T,>(
+    rpcName: string,
+    params: any
+  ): Promise<{ data: T[] | null; error: any }> => {
+    let allData: T[] = [];
+    let from = 0;
+    const limit = 1000;
+
+    while (true) {
+      const { data, error } = await supabase
+        .rpc(rpcName, params)
+        .range(from, from + limit - 1);
+
+      if (error) {
+        return { data: null, error };
+      }
+
+      if (!data || data.length === 0) {
+        break;
+      }
+
+      allData = [...allData, ...data];
+
+      if (data.length < limit) {
+        break;
+      }
+
+      from += limit;
+    }
+
+    return { data: allData, error: null };
+  };
+
   const loadData = async () => {
     setLoading(true);
     setFetchError(false);
@@ -135,10 +168,10 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      console.log('[DEBUG] Calling get_admin_participants with payload:', { admin_pass: adminPass });
+      console.log('[DEBUG] Calling get_admin_participants and responses with pagination.');
       const [{ data: ps, error: psErr }, { data: rs, error: rsErr }] = await Promise.all([
-        supabase.rpc('get_admin_participants', { admin_pass: adminPass }),
-        supabase.rpc('get_admin_responses', { admin_pass: adminPass }),
+        fetchAllFromRPC<Participant>('get_admin_participants', { admin_pass: adminPass }),
+        fetchAllFromRPC<RatingRow>('get_admin_responses', { admin_pass: adminPass }),
       ]);
       
       if (psErr) console.error('[DEBUG] get_admin_participants Error:', psErr);
